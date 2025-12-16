@@ -1,0 +1,27 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+ 
+# IDE
+.vscode/
+.idea/
+
+# uv environment files
+uv.lock
+
+# --- DATA STORAGE ---
+data_storage/
+*.parquet
+*.db
+*.csv
+*.sqlite
+
+# Logs
+*.log
