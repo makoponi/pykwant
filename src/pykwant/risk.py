@@ -2,8 +2,7 @@ import math
 from datetime import date
 from typing import Callable
 
-import pykwant.instruments as instruments
-import pykwant.rates as rates
+from pykwant import instruments, rates
 
 PricerFn = Callable[
     [instruments.FixedRateBond, rates.YieldCurveFn, date], instruments.Money

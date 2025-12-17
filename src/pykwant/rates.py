@@ -2,8 +2,7 @@ import math
 from datetime import date
 from typing import Callable, NewType
 
-import pykwant.dates as dates
-import pykwant.numerics as numerics
+from pykwant import dates, numerics
 
 Rate = NewType("Rate", float)
 DiscountFactor = NewType("DiscountFactor", float)

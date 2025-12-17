@@ -5,8 +5,7 @@ from typing import NewType
 from toolz import pipe
 from toolz.curried import filter, map
 
-import pykwant.dates as dates
-import pykwant.rates as rates
+from pykwant import dates, rates
 
 Money = NewType("Money", float)
 
