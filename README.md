@@ -1,5 +1,9 @@
 # PyKwant 🐍📉
 
+> 🚧 **DISCLAIMER: Active Development**
+>
+> This project is currently in an **Alpha** stage and is under active development. APIs are subject to breaking changes without notice. **PyKwant is NOT ready for production use.**
+
 **PyKwant** is a modern, pure-Python library for Quantitative Finance, built with a strict **Functional Programming** philosophy.
 
 Unlike traditional object-oriented financial libraries where instruments "price themselves" via internal state, PyKwant separates **Data** (Immutable DTOs) from **Behavior** (Pure Functions). This approach leads to code that is easier to test, parallelize, and reason about.
@@ -103,6 +107,28 @@ The mathematical engine.
 * **Solvers**: `newton_solve` for root finding (e.g., implied volatility, YTM).
 
 * **Differentiation**: `numerical_derivative`.
+
+`pykwant.risk`
+
+Market risk and sensitivity analysis.
+
+* **Metrics**: `calculate_risk_metrics` for Duration, Convexity, and DV01.
+
+* **Methodology**: Uses numerical differentiation on pricing functions.
+
+* **Scenarios**: Supports curve shifting for stress testing.
+
+`pykwant.portfolio`
+
+Portfolio management and aggregation.
+
+* **Structures**: `Position` (Instrument + Quantity).
+
+* **Valuation**: `portfolio_npv` for summing position values.
+
+* **Risk Aggregation**: `portfolio_risk` for total DV01 and Portfolio Duration.
+
+* **Reporting**: `exposure_by_maturity_year`.
 
 ## 🛠️ Development
 
