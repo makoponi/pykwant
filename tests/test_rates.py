@@ -12,7 +12,7 @@ def test_create_curve_from_discount_factor() -> None:
         ref_date + timedelta(days=365),  # Year 1
         ref_date + timedelta(days=730),  # Year 2
     ]
-    
+
     r = 0.05
     dfs = [
         math.exp(-r * 1.0),
@@ -30,7 +30,7 @@ def test_create_curve_from_discount_factor() -> None:
     mid_date = ref_date + timedelta(days=int(365 * 1.5))
     df_mid = curve(mid_date)
     expected_mid = math.exp(-r * 1.5)
-    
+
     assert df_mid == pytest.approx(expected_mid, rel=1e-3)
 
 
@@ -73,7 +73,7 @@ def test_forward_rate() -> None:
 
 def test_present_value() -> None:
     payment_date = date(2024, 1, 1)
-    
+
     def mock_curve(d: date) -> rates.DiscountFactor:
         return rates.DiscountFactor(0.8)
 
@@ -88,6 +88,8 @@ def test_compound_factor() -> None:
 
     assert rates.compound_factor(r, t, frequency=0) == pytest.approx(math.exp(r * t))
 
-    assert rates.compound_factor(r, t, frequency=1) == pytest.approx((1 + r)**t)
+    assert rates.compound_factor(r, t, frequency=1) == pytest.approx((1 + r) ** t)
 
-    assert rates.compound_factor(r, t, frequency=2) == pytest.approx((1 + r/2)**(2*t))
+    assert rates.compound_factor(r, t, frequency=2) == pytest.approx(
+        (1 + r / 2) ** (2 * t)
+    )
