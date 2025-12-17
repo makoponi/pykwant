@@ -18,7 +18,7 @@ PyKwant requires **Python 3.14** or higher.
 
 ```bash
 # Clone the repository
-git clone [https://github.com/your-username/pykwant.git](https://github.com/your-username/pykwant.git)
+git clone https://github.com/makoponi/pykwant.git
 cd pykwant
 
 # Install dependencies (using uv, pip, or hatch)
