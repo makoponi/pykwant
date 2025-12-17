@@ -90,3 +90,31 @@ def price_instrument(
     npv = pipe(instrument, generate_cash_flows, filter(_is_future), map(_pv_flow), sum)
 
     return Money(npv)
+
+
+def accrued_interest(bond: FixedRateBond, valuation_date: date) -> Money:
+    """
+    Docstring for accrued_interest
+    """
+    schedule = dates.generate_schedule(
+        start=bond.start_date,
+        end=bond.maturity_date,
+        freq_month=bond.frequency_months,
+        cal=bond.calendar,
+        convention=bond.rolling,
+    )
+    prev = [d for d in schedule if d <= valuation_date][-1]
+    tau_accrued = bond.day_count(prev, valuation_date)
+    accrued = bond.face_value * bond.coupon_rate * tau_accrued
+    return Money(accrued)
+
+
+def clean_price(
+    instrument: FixedRateBond, curve: rates.YieldCurveFn, valuation_date: date
+) -> Money:
+    """
+    Docstring for clean_price
+    """
+    dirty = price_instrument(instrument, curve, valuation_date)
+    accrued = accrued_interest(instrument, valuation_date)
+    return Money(dirty - accrued)

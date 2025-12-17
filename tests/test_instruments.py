@@ -5,6 +5,8 @@ from pykwant.dates import thirty_360
 from pykwant.instruments import (
     FixedRateBond,
     Money,
+    accrued_interest,
+    clean_price,
     generate_cash_flows,
     price_instrument,
 )
@@ -91,3 +93,34 @@ def test_price_instrument_expired() -> None:
     valuation_date = date(2022, 1, 1)
     price = price_instrument(bond, lambda d: 1.0, valuation_date)
     assert price == 0.0
+
+
+def test_accrued_interest() -> None:
+    bond = FixedRateBond(
+        face_value=Money(100.0),
+        coupon_rate=0.05,
+        start_date=date(2025, 1, 1),
+        maturity_date=date(2026, 1, 1),
+        frequency_months=12,
+        day_count=thirty_360,
+    )
+    valuation_date = date(2025, 4, 1)
+
+    accrued = accrued_interest(bond, valuation_date)
+
+    assert math.isclose(accrued, 1.25)
+
+
+def test_clean_price() -> None:
+    bond = FixedRateBond(
+        face_value=Money(100.0),
+        coupon_rate=0.05,
+        start_date=date(2025, 1, 1),
+        maturity_date=date(2026, 1, 1),
+        frequency_months=12,
+        day_count=thirty_360,
+    )
+    valuation_date = date(2025, 7, 1)
+
+    cp = clean_price(bond, lambda d: 1.0, valuation_date)
+    assert math.isclose(cp, 102.5)
