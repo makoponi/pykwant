@@ -3,7 +3,7 @@ from datetime import date, timedelta
 from itertools import count, takewhile
 from typing import Callable, FrozenSet, Generator
 
-from dateutil.relativedelta import relativedelta  # type: ignore
+from dateutil.relativedelta import relativedelta
 
 MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY = range(7)
 

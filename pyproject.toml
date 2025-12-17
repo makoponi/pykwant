@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
     "python-dateutil>=2.9.0.post0",
+    "toolz>=1.1.0",
 ]
 
 [build-system]
@@ -33,11 +34,19 @@ dev = [
 ]
 
 [tool.mypy]
-# --- STRICT MODE ---
 strict = true
-
 python_version = "3.14"
 warn_return_any = true
 warn_unused_configs = true
 show_error_codes = true
 pretty = true
+explicit_package_bases = true
+mypy_path = "src/pykwant"
+
+[[tool.mypy.overrides]]
+module = "pytest.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "dateutil.*"
+ignore_missing_imports = true
