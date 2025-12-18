@@ -1,98 +1,161 @@
+"""
+Portfolio Module
+================
+
+This module handles the management and risk aggregation of portfolios.
+
+In PyKwant, a **Portfolio** is not a class, but simply a list of `Position` objects.
+This module provides pure functions to aggregate these positions, calculating
+total Net Present Value (NPV), risk metrics (Portfolio Duration, DV01), and
+exposure reports.
+
+Key Concepts:
+- **Position**: A tuple of (Instrument, Quantity).
+- **Portfolio**: A `list[Position]`.
+"""
+
 from dataclasses import dataclass
 from datetime import date
-from typing import Any
-
-from toolz import groupby, valmap
+from typing import Dict, List, TypeAlias
 
 from pykwant import instruments, rates, risk
 
 
 @dataclass(frozen=True)
 class Position:
-    instrument: Any  # Union[Bond, Swap, etc.]
+    """
+    Immutable representation of a holding in a financial instrument.
+
+    Attributes:
+        instrument (instruments.Instrument): The financial instrument held.
+        quantity (float): The amount held.
+                          Positive (+) for Long positions.
+                          Negative (-) for Short positions.
+    """
+
+    instrument: instruments.Instrument
     quantity: float
 
-    @property
-    def direction(self) -> int:
-        return 1 if self.quantity > 0 else -1
 
-
-@dataclass(frozen=True)
-class PositionRisk:
-    market_value: float
-    dv01: float
-    contribution: float
-
-
-Portfolio = list[Position]
-
-
-def evaluate_position(
-    pos: Position,
-    curve: rates.YieldCurveFn,
-    val_date: date,
-) -> float:
-    """
-    Docstring for evaluate_position
-    """
-    unit_price = instruments.price_instrument(pos.instrument, curve, val_date)
-    return unit_price * pos.quantity
+# Type Alias for a Portfolio (just a list of positions)
+Portfolio: TypeAlias = List[Position]
 
 
 def portfolio_npv(
-    portfolio: Portfolio,
-    curve: rates.YieldCurveFn,
-    val_date: date,
+    portfolio: Portfolio, curve: rates.YieldCurveFn, valuation_date: date
 ) -> float:
     """
-    Docstring for portfolio_npv
+    Calculates the Total Net Present Value (NPV) of a portfolio.
+
+    It sums the market value of each position:
+    $$ Total NPV = \sum (Price_i \times Quantity_i) $$
+
+    Args:
+        portfolio (Portfolio): A list of positions.
+        curve (YieldCurveFn): The market yield curve for pricing.
+        valuation_date (date): The date of valuation.
+
+    Returns:
+        float: The total market value of the portfolio.
     """
-    return sum(evaluate_position(p, curve, val_date) for p in portfolio)
+    total_value = 0.0
+    for pos in portfolio:
+        price = instruments.price_instrument(pos.instrument, curve, valuation_date)
+        total_value += price * pos.quantity
+    return total_value
 
 
 def portfolio_risk(
-    portfolio: Portfolio,
-    curve: rates.YieldCurveFn,
-    val_date: date,
-) -> dict[str, float]:
+    portfolio: Portfolio, curve: rates.YieldCurveFn, valuation_date: date
+) -> Dict[str, float]:
     """
-    Docstring for portfolio_risk
+    Aggregates risk metrics for the entire portfolio.
+
+    Calculates:
+    - **Market Value**: Total NPV.
+    - **Total DV01**: The dollar change of the portfolio for a 1bp shift.
+      (Sum of individual DV01 * Quantity).
+    - **Portfolio Duration**: The value-weighted average duration.
+      $$ Dur_{port} = \frac{\sum (Dur_i \times Value_i)}{Total Value} $$
+
+    Args:
+        portfolio (Portfolio): A list of positions.
+        curve (YieldCurveFn): The market yield curve.
+        valuation_date (date): The date of valuation.
+
+    Returns:
+        Dict[str, float]: A dictionary containing 'market_value', 'total_dv01',
+        and 'portfolio_duration'.
     """
+    total_value = 0.0
+    total_dv01 = 0.0
+    weighted_duration_sum = 0.0
 
-    def _analyze_pos(pos: Position) -> dict[str, float]:
-        metrics = risk.calculate_risk_metrics(
-            pos.instrument, curve, val_date, instruments.price_instrument
-        )
-        mv = metrics["price"] * pos.quantity
-        pos_dv01 = metrics["dv01"] * pos.quantity
+    for pos in portfolio:
+        # Calculate metrics for the single instrument
+        metrics = risk.calculate_risk_metrics(pos.instrument, curve, valuation_date)
 
-        return {"market_value": mv, "dv01": pos_dv01, "duration": metrics["duration"]}
+        position_value = metrics["price"] * pos.quantity
+        position_dv01 = metrics["dv01"] * pos.quantity
 
-    results = [_analyze_pos(p) for p in portfolio]
+        # Aggregate
+        total_value += position_value
+        total_dv01 += position_dv01
 
-    total_mv = sum(r["market_value"] for r in results)
-    total_dv01 = sum(r["dv01"] for r in results)
+        # For Portfolio Duration: Sum(Duration * MarketValue)
+        weighted_duration_sum += metrics["duration"] * position_value
 
-    port_duration = (total_dv01 / (total_mv * 0.0001)) if total_mv != 0 else 0
+    # Handle edge case where portfolio value is zero (to avoid division by zero)
+    if total_value == 0:
+        port_duration = 0.0
+    else:
+        port_duration = weighted_duration_sum / total_value
 
     return {
-        "total_market_value": total_mv,
+        "market_value": total_value,
         "total_dv01": total_dv01,
         "portfolio_duration": port_duration,
-        "positions_count": len(portfolio),
     }
 
 
 def exposure_by_maturity_year(
-    portfolio: Portfolio,
-    curve: rates.YieldCurveFn,
-    val_date: date,
-) -> dict[int, float]:
+    portfolio: Portfolio, curve: rates.YieldCurveFn, valuation_date: date
+) -> Dict[int, float]:
     """
-    Docstring for exposure_by_maturity_year
+    Aggregates portfolio exposure (NPV) grouped by maturity year.
+
+    Useful for analyzing the maturity profile (bucketing) of the portfolio.
+
+    Args:
+        portfolio (Portfolio): A list of positions.
+        curve (YieldCurveFn): The market yield curve.
+        valuation_date (date): The date of valuation.
+
+    Returns:
+        Dict[int, float]: A dictionary mapping Year -> Total NPV for that year.
+        Example: {2025: 1500.0, 2026: -500.0}
     """
-    grouped = groupby(lambda p: p.instrument.maturity_date.year, portfolio)
-    result: dict[int, float] = valmap(
-        lambda group: sum(evaluate_position(p, curve, val_date) for p in group), grouped
-    )
-    return result
+    exposure: Dict[int, float] = {}
+
+    for pos in portfolio:
+        # Determine maturity year based on instrument type
+        maturity_year = 0
+
+        if hasattr(pos.instrument, "maturity_date"):
+            # Works for FixedRateBond and similar
+            maturity_year = pos.instrument.maturity_date.year  # type: ignore
+        elif hasattr(pos.instrument, "expiry_date"):
+            # Works for Options
+            maturity_year = pos.instrument.expiry_date.year  # type: ignore
+        else:
+            # Fallback for instruments without clear maturity (e.g. Cash)
+            maturity_year = valuation_date.year
+
+        # Calculate Value
+        price = instruments.price_instrument(pos.instrument, curve, valuation_date)
+        value = price * pos.quantity
+
+        # Accumulate in bucket
+        exposure[maturity_year] = exposure.get(maturity_year, 0.0) + value
+
+    return exposure
