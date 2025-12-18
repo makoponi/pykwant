@@ -37,6 +37,18 @@ class FixedRateBond:
     rolling: dates.RollingConvention = dates.modified_following
 
 
+@dataclass(frozen=True)
+class EuropeanOption:
+    """
+    Docstring for EuropeanOption
+    """
+
+    asset_name: str
+    strike: Money
+    expiry_date: date
+    type: str = "call"  # "call" | "put"
+
+
 def generate_cash_flows(bond: FixedRateBond) -> list[CashFlow]:
     """
     Docstring for generate_cash_flows
