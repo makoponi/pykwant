@@ -89,7 +89,7 @@ def linear_interpolation(
 def log_linear_interpolation(
     x_data: list[float], y_data: list[float], extrapolate: bool = True
 ) -> ScalarFunction:
-    """
+    r"""
     Constructs a Log-Linear interpolation function.
 
     Transforms $y$ into $\ln(y)$, performs linear interpolation in the logarithmic

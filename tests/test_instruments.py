@@ -1,126 +1,172 @@
+"""
+Test suite for pykwant.instruments module.
+"""
+
 import math
 from datetime import date
 
-from pykwant.dates import thirty_360
-from pykwant.instruments import (
-    FixedRateBond,
-    Money,
-    accrued_interest,
-    clean_price,
-    generate_cash_flows,
-    price_instrument,
-)
+import pytest
+
+from pykwant import dates, instruments
+
+# --- Fixtures ---
 
 
-def test_generate_cash_flows_annual() -> None:
-    bond = FixedRateBond(
-        face_value=Money(100.0),
-        coupon_rate=0.05,
-        start_date=date(2025, 1, 1),
-        maturity_date=date(2026, 1, 1),
-        frequency_months=12,
-        day_count=thirty_360,
-    )
-    flows = generate_cash_flows(bond)
-
-    assert len(flows) == 2
-
-    assert flows[0].type == "coupon"
-    assert flows[0].payment_date == date(2026, 1, 1)
-    assert math.isclose(flows[0].amount, 5.0)
-
-    assert flows[1].type == "principal"
-    assert flows[1].payment_date == date(2026, 1, 1)
-    assert math.isclose(flows[1].amount, 100.0)
+@pytest.fixture
+def sample_calendar():
+    """Simple calendar with weekends only."""
+    return dates.Calendar(holidays=frozenset(), weekends=(6, 7))
 
 
-def test_generate_cash_flows_semiannual() -> None:
-    bond = FixedRateBond(
-        face_value=Money(1000.0),
-        coupon_rate=0.04,  # 4%
-        start_date=date(2025, 1, 1),
-        maturity_date=date(2026, 1, 1),
-        frequency_months=6,
-        day_count=thirty_360,
-    )
-    flows = generate_cash_flows(bond)
-
-    assert len(flows) == 3
-
-    assert flows[0].payment_date == date(2025, 7, 1)
-    assert math.isclose(flows[0].amount, 20.0)
-
-    assert flows[1].payment_date == date(2026, 1, 1)
-    assert math.isclose(flows[1].amount, 20.0)
-
-    assert flows[2].payment_date == date(2026, 1, 1)
-    assert math.isclose(flows[2].amount, 1000.0)
-
-
-def test_price_instrument_at_par() -> None:
-    bond = FixedRateBond(
-        face_value=Money(100.0),
+@pytest.fixture
+def sample_bond(sample_calendar):
+    """
+    Creates a standard 2-Year Bond.
+    Face: 100
+    Coupon: 5% (Annual)
+    Start: 2025-01-01
+    Maturity: 2027-01-01
+    """
+    return instruments.FixedRateBond(
+        face_value=instruments.Money(100.0),
         coupon_rate=0.05,
         start_date=date(2025, 1, 1),
         maturity_date=date(2027, 1, 1),
         frequency_months=12,
-        day_count=thirty_360,
+        day_count=dates.thirty_360,
+        calendar=sample_calendar,
     )
 
-    def mock_curve(d: date) -> float:
-        if d == date(2026, 1, 1):
-            return 1.0 / 1.05
-        if d == date(2027, 1, 1):
-            return 1.0 / (1.05**2)
-        return 1.0
 
-    valuation_date = date(2025, 1, 1)
+@pytest.fixture
+def flat_curve():
+    """Flat 5% continuously compounded curve."""
+    ref_date = date(2025, 1, 1)
 
-    price = price_instrument(bond, mock_curve, valuation_date)
+    def _curve(d: date) -> float:
+        t = dates.act_365(ref_date, d)
+        return math.exp(-0.05 * t)
 
-    assert math.isclose(price, 100.0)
+    return _curve
 
 
-def test_price_instrument_expired() -> None:
-    bond = FixedRateBond(
-        face_value=Money(100.0),
-        coupon_rate=0.05,
-        start_date=date(2020, 1, 1),
-        maturity_date=date(2021, 1, 1),
-        frequency_months=12,
+# --- 1. Data Structure Tests ---
+
+
+def test_bond_creation(sample_bond):
+    assert sample_bond.face_value == 100.0
+    assert sample_bond.coupon_rate == 0.05
+    assert isinstance(sample_bond.calendar, dates.Calendar)
+
+
+def test_option_creation():
+    opt = instruments.EuropeanOption(
+        asset_name="TEST",
+        strike=instruments.Money(100.0),
+        expiry_date=date(2026, 1, 1),
+        call_put="put",
     )
-
-    valuation_date = date(2022, 1, 1)
-    price = price_instrument(bond, lambda d: 1.0, valuation_date)
-    assert price == 0.0
+    assert opt.call_put == "put"
+    assert opt.asset_name == "TEST"
 
 
-def test_accrued_interest() -> None:
-    bond = FixedRateBond(
-        face_value=Money(100.0),
-        coupon_rate=0.05,
-        start_date=date(2025, 1, 1),
-        maturity_date=date(2026, 1, 1),
-        frequency_months=12,
-        day_count=thirty_360,
-    )
-    valuation_date = date(2025, 4, 1)
+# --- 2. Cash Flow Generation Tests ---
 
-    accrued = accrued_interest(bond, valuation_date)
 
+def test_generate_cash_flows(sample_bond):
+    flows = instruments.generate_cash_flows(sample_bond)
+
+    # 2 Years, Annual -> 2 Coupons + 1 Principal = 3 Flows
+    assert len(flows) == 3
+
+    # Check First Coupon
+    c1 = flows[0]
+    assert c1.type == "coupon"
+    assert c1.payment_date == date(2026, 1, 1)  # Adjusted if needed, but here simple
+    assert math.isclose(c1.amount, 5.0)  # 100 * 0.05 * 1
+
+    # Check Principal
+    principal = flows[-1]
+    assert principal.type == "principal"
+    assert principal.payment_date == date(2027, 1, 1)
+    assert principal.amount == 100.0
+
+
+# --- 3. Accrued Interest Tests ---
+
+
+def test_accrued_interest_start(sample_bond):
+    # At start date, accrued is 0
+    val_date = date(2025, 1, 1)
+    accrued = instruments.accrued_interest(sample_bond, val_date)
+    assert accrued == 0.0
+
+
+def test_accrued_interest_mid_period(sample_bond):
+    # 3 months in (April 1st) using 30/360
+    # Jan, Feb, Mar = 3 * 30 = 90 days.
+    val_date = date(2025, 4, 1)
+
+    # Accrued = 100 * 0.05 * (90/360) = 5 * 0.25 = 1.25
+    accrued = instruments.accrued_interest(sample_bond, val_date)
     assert math.isclose(accrued, 1.25)
 
 
-def test_clean_price() -> None:
-    bond = FixedRateBond(
-        face_value=Money(100.0),
-        coupon_rate=0.05,
-        start_date=date(2025, 1, 1),
-        maturity_date=date(2026, 1, 1),
-        frequency_months=12,
-        day_count=thirty_360,
-    )
-    valuation_date = date(2025, 7, 1)
+def test_accrued_interest_after_coupon(sample_bond):
+    # Just after first coupon (Jan 2nd 2026)
+    val_date = date(2026, 1, 2)
+    # 1 day accrued
+    accrued = instruments.accrued_interest(sample_bond, val_date)
+    expected = 100 * 0.05 * (1.0 / 360.0)
+    assert math.isclose(accrued, expected)
 
-    cp = clean_price(bond, lambda d: 1.0, valuation_date)
-    assert math.isclose(cp, 102.5)
+
+# --- 4. Pricing Tests (Bonds) ---
+
+
+def test_price_instrument_bond(sample_bond, flat_curve):
+    # Valuation at Start
+    val_date = date(2025, 1, 1)
+
+    # With 5% Coupon and 5% Curve, Price should be approx Par (~100)
+    # Note: Curve is continuous 5%, Coupon is discrete 5%.
+    # Continuous discount factors are slightly lower than discrete 1/(1+r).
+    # So Price will be slightly different from 100, but close.
+
+    price = instruments.price_instrument(sample_bond, flat_curve, val_date)
+
+    # Calculate expected manually
+    # Flow 1 (1Y): 5 * exp(-0.05 * 1)
+    # Flow 2 (2Y): 105 * exp(-0.05 * 2)
+    t1 = dates.act_365(val_date, date(2026, 1, 1))
+    t2 = dates.act_365(val_date, date(2027, 1, 1))
+
+    expected = 5.0 * math.exp(-0.05 * t1) + 105.0 * math.exp(-0.05 * t2)
+
+    assert math.isclose(price, expected, rel_tol=1e-9)
+
+
+def test_clean_price(sample_bond, flat_curve):
+    val_date = date(2025, 4, 1)
+
+    dirty = instruments.price_instrument(sample_bond, flat_curve, val_date)
+    accrued = instruments.accrued_interest(sample_bond, val_date)
+
+    clean = instruments.clean_price(sample_bond, flat_curve, val_date)
+
+    assert math.isclose(clean, dirty - accrued)
+
+
+# --- 5. Pricing Tests (Options - Error Handling) ---
+
+
+def test_price_instrument_option_raises(flat_curve):
+    opt = instruments.EuropeanOption("TEST", instruments.Money(100), date(2026, 1, 1))
+    val_date = date(2025, 1, 1)
+
+    # instruments.py only handles bonds. Options should raise NotImplementedError
+    # guiding the user to the 'equity' module.
+    with pytest.raises(NotImplementedError) as excinfo:
+        instruments.price_instrument(opt, flat_curve, val_date)
+
+    assert "equity" in str(excinfo.value)

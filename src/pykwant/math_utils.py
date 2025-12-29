@@ -13,10 +13,11 @@ import math
 
 
 def norm_pdf(x: float) -> float:
-    """
+    r"""
     Calculates the Probability Density Function (PDF) of the Standard Normal Distribution.
 
-    The Standard Normal Distribution has a mean ($\mu$) of 0 and a standard deviation ($\sigma$) of 1.
+    The Standard Normal Distribution has a mean ($\mu$) of 0 and a standard 
+    deviation ($\sigma$) of 1.
 
     Formula:
     $$ \phi(x) = \frac{1}{\sqrt{2\pi}} e^{-\frac{1}{2}x^2} $$
@@ -31,7 +32,7 @@ def norm_pdf(x: float) -> float:
 
 
 def norm_cdf(x: float) -> float:
-    """
+    r"""
     Calculates the Cumulative Distribution Function (CDF) of the Standard Normal Distribution.
 
     This represents the probability that a standard normal random variable $Z$ takes

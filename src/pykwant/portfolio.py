@@ -41,10 +41,8 @@ class Position:
 Portfolio: TypeAlias = List[Position]
 
 
-def portfolio_npv(
-    portfolio: Portfolio, curve: rates.YieldCurveFn, valuation_date: date
-) -> float:
-    """
+def portfolio_npv(portfolio: Portfolio, curve: rates.YieldCurveFn, valuation_date: date) -> float:
+    r"""
     Calculates the Total Net Present Value (NPV) of a portfolio.
 
     It sums the market value of each position:
@@ -68,7 +66,7 @@ def portfolio_npv(
 def portfolio_risk(
     portfolio: Portfolio, curve: rates.YieldCurveFn, valuation_date: date
 ) -> Dict[str, float]:
-    """
+    r"""
     Aggregates risk metrics for the entire portfolio.
 
     Calculates:
@@ -143,10 +141,10 @@ def exposure_by_maturity_year(
 
         if hasattr(pos.instrument, "maturity_date"):
             # Works for FixedRateBond and similar
-            maturity_year = pos.instrument.maturity_date.year  # type: ignore
+            maturity_year = pos.instrument.maturity_date.year
         elif hasattr(pos.instrument, "expiry_date"):
             # Works for Options
-            maturity_year = pos.instrument.expiry_date.year  # type: ignore
+            maturity_year = pos.instrument.expiry_date.year
         else:
             # Fallback for instruments without clear maturity (e.g. Cash)
             maturity_year = valuation_date.year

@@ -1,4 +1,4 @@
-"""
+r"""
 Risk Module
 ===========
 
@@ -165,7 +165,7 @@ def effective_convexity(
 
 
 def calculate_risk_metrics(
-    instruments: instruments.Instrument,
+    instrument: instruments.Instrument,
     curve: rates.YieldCurveFn,
     valuation_date: date,
     bump: float = 1e-4,
@@ -190,9 +190,9 @@ def calculate_risk_metrics(
     # for duration and convexity (e.g. calculating P_up and P_down once).
     # Here we favor code clarity and reuse of the specific functions.
 
-    price = instruments.price_instrument(instruments, curve, valuation_date)
-    dur = effective_duration(instruments, curve, valuation_date)
-    conv = effective_convexity(instruments, curve, valuation_date)
-    dv01_val = pv01(instruments, curve, valuation_date, bump)
+    price = instruments.price_instrument(instrument, curve, valuation_date)
+    dur = effective_duration(instrument, curve, valuation_date)
+    conv = effective_convexity(instrument, curve, valuation_date)
+    dv01_val = pv01(instrument, curve, valuation_date, bump)
 
     return {"price": price, "duration": dur, "convexity": conv, "dv01": dv01_val}

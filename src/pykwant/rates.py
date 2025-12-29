@@ -43,7 +43,7 @@ def compound_factor(rate: float, t: float, frequency: int = 0) -> float:
     """
     if frequency == 0:
         return math.exp(rate * t)
-    return (1 + rate / frequency) ** (frequency * t)
+    return float((1 + rate / frequency) ** (frequency * t))
 
 
 def create_curve_from_discount_factor(
@@ -90,7 +90,7 @@ def zero_rates(
     target_date: date,
     day_count: dates.DayCountConvention = dates.act_365,
 ) -> float:
-    """
+    r"""
     Extracts the Zero (Spot) Rate from a yield curve for a specific date.
 
     The Zero Rate is the continuously compounded rate $r$ such that:
@@ -125,12 +125,12 @@ def forward_rate(
     end_date: date,
     day_count: dates.DayCountConvention = dates.act_365,
 ) -> float:
-    """
+    r"""
     Calculates the implied Forward Rate between two future dates.
 
     The forward rate is the rate $F$ applicable between $T_1$ and $T_2$.
     Based on the ratio of discount factors:
-    $F = \frac{1}{\tau} \left( \frac{DF(T_1)}{DF(T_2)} - 1 \right)$ (Simple Compounding approximation)
+    $F = \frac{1}{\tau} \left( \frac{DF(T_1)}{DF(T_2)} - 1 \right)$ (Simple Compounding approx.)
     or continuously compounded equivalent depending on convention.
     Here we return the simple forward rate implied by the discount factors.
 
@@ -154,7 +154,7 @@ def forward_rate(
 
 
 def present_value(amount: float, payment_date: date, curve: YieldCurveFn) -> float:
-    """
+    r"""
     Calculates the Present Value (PV) of a single future cash flow.
 
     Args:

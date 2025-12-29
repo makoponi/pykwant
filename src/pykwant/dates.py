@@ -279,9 +279,7 @@ def generate_schedule(
             # Fallback to last day of month if start.day doesn't exist (e.g. 31st -> 30th/28th)
             # This is a simplification; robust date math is complex.
             if m == 2:
-                current = date(
-                    y, m, 28
-                )  # Leap year check omitted for brevity in this snippet
+                current = date(y, m, 28)  # Leap year check omitted for brevity in this snippet
             else:
                 current = date(y, m, 30)
 

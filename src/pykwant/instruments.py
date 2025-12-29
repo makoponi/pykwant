@@ -223,9 +223,7 @@ def price_instrument(
     raise NotImplementedError(f"Pricing not implemented for {type(instrument)}")
 
 
-def clean_price(
-    bond: FixedRateBond, curve: rates.YieldCurveFn, valuation_date: date
-) -> float:
+def clean_price(bond: FixedRateBond, curve: rates.YieldCurveFn, valuation_date: date) -> float:
     """
     Calculates the Clean Price of a bond.
 
