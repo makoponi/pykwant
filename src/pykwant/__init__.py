@@ -5,6 +5,7 @@ Exposes the core modules for quantitative finance, strictly following a
 functional programming paradigm.
 
 Modules:
+- analytics: Performance analysis (Returns, Sharpe, Drawdown).
 - dates: Calendar and day count conventions.
 - equity: Equity options pricing (Black-Scholes) and models.
 - instruments: Financial product definitions (Bonds, Options, etc.).
@@ -16,6 +17,7 @@ Modules:
 """
 
 from pykwant import (
+    analytics,
     dates,
     equity,
     instruments,
@@ -31,6 +33,7 @@ __version__ = "0.1.0"
 
 # Explicitly define what is exported by 'from pykwant import *'
 __all__ = [
+    "analytics",
     "dates",
     "equity",
     "instruments",
