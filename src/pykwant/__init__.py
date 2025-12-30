@@ -9,6 +9,7 @@ Modules:
 - dates: Calendar and day count conventions.
 - equity: Equity options pricing (Black-Scholes) and models.
 - instruments: Financial product definitions (Bonds, Options, etc.).
+- market_risk: Market risk metrics (VaR, ES).
 - math_utils: Lightweight mathematical utilities (PDF, CDF).
 - numerics: Numerical methods (interpolation, solvers, differentiation).
 - portfolio: Portfolio aggregation and risk analysis.
@@ -21,6 +22,7 @@ from pykwant import (
     dates,
     equity,
     instruments,
+    market_risk,
     math_utils,
     numerics,
     portfolio,
@@ -37,6 +39,7 @@ __all__ = [
     "dates",
     "equity",
     "instruments",
+    "market_risk",
     "math_utils",
     "numerics",
     "portfolio",
