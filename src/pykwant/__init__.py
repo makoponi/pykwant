@@ -15,6 +15,7 @@ Modules:
 - portfolio: Portfolio aggregation and risk analysis.
 - rates: Yield curve construction and interest rate helpers.
 - risk: Risk metrics (Duration, Convexity, DV01).
+- trees: Binomial trees.
 """
 
 from pykwant import (
@@ -28,6 +29,7 @@ from pykwant import (
     portfolio,
     rates,
     risk,
+    trees,
 )
 
 # Version identifier matches pyproject.toml
@@ -45,4 +47,5 @@ __all__ = [
     "portfolio",
     "rates",
     "risk",
+    "trees",
 ]
