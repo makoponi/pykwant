@@ -15,6 +15,7 @@ Modules:
 - portfolio: Portfolio aggregation and risk analysis.
 - rates: Yield curve construction and interest rate helpers.
 - risk: Risk metrics (Duration, Convexity, DV01).
+- simulations: Monte Carlo simulation algorithms.
 - trees: Binomial trees.
 """
 
@@ -29,6 +30,7 @@ from pykwant import (
     portfolio,
     rates,
     risk,
+    simulations,
     trees,
 )
 
@@ -47,5 +49,6 @@ __all__ = [
     "portfolio",
     "rates",
     "risk",
+    "simulations",
     "trees",
 ]
